@@ -83,8 +83,9 @@ app.get("/players/:playerId/matches/", async (request, response) => {
     SELECT
       match_details.match_id as matchId,
       match, year 
-      from player_match_score  join match_details
-      where player_id = ${playerId};`;
+      from player_match_score join match_details 
+      on player_match_score.match_id =match_details.match_id
+      where player_match_score.player_id = ${playerId};`;
   const playerMatchesArray = await database.all(getPlayerMatchesQuery);
   response.send(playerMatchesArray);
 });
@@ -92,11 +93,11 @@ app.get("/players/:playerId/matches/", async (request, response) => {
 //Get Match Players Details API
 app.get("/matches/:matchId/players/", async (request, response) => {
   const { matchId } = request.params;
-  const getMatchPlayersQuery = `select player_details.player_id as playerId,
-      player_details.player_name as playerName
-    FROM
-      player_details join player_match_score 
-    where player_match_score.player_match_id =${matchId}; `;
+  const getMatchPlayersQuery = `
+  select player_details.player_id as playerId,player_name as playerName 
+  from player_details join player_match_score 
+  on player_details.player_id = player_match_score.player_id
+  where player_match_score.match_id =${matchId};`;
   const matchPlayersDetails = await database.all(getMatchPlayersQuery);
   response.send(matchPlayersDetails);
 });
@@ -108,13 +109,13 @@ app.get("/players/:playerId/playerScores/", async (request, response) => {
     SELECT
       player_details.player_id as playerId,
       player_name as playerName,
-      sum(player_match_score.score) as totalScore,
-      sum(player_match_score.fours) as totalFours,
-      sum(player_match_score.sixes) as totalSixes
+      sum(score) as totalScore,
+      sum(fours) as totalFours,
+      sum(sixes) as totalSixes
     FROM
       player_details join player_match_score
-      where  player_details.player_id = ${playerId}
-      group by player_details.player_id;`;
+      on player_details.player_id = player_match_score.player_id
+      where player_details.player_id = ${playerId};`;
   const playerScore = await database.get(getPlayerScoreQuery);
   response.send(playerScore);
 });
